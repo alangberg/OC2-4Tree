@@ -38,6 +38,10 @@ void ct_add(ctTree* ct, uint32_t value);
 
 void ct_print(ctTree* ct, FILE *pFile);
 
+ctNode* chequearCaso(ctNode* currNode, int indice, uint32_t newVal);
+
+ctNode* ct_aux_search(ctNode* currNode, uint32_t newVal);
+
 
 /** Funciones de Iterador de CuatroTree **/
 

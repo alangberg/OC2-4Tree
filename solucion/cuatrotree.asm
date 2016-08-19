@@ -57,8 +57,7 @@ ct_new:
   call malloc                               ;pido memoria para tdt (empieza en rax)
   mov qword [rax+TREE_OFFSET_ROOT], NULL    ;seteo la raiz del nuevo arbol.
   mov dword [rax+TREE_OFFSET_SIZE], 0       ;seteo la cantidad de nodos en 0 (este campo es una dword -> 4 bytes)
-  mov rdi, r12
-  mov [rdi], rax
+  mov [r12], rax
 
   add rsp, 8
   pop r12
