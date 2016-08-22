@@ -38,8 +38,9 @@
   %define ITER_CURR                    16
   %define ITER_COUNT                   17
   ;-----ETC-----
-  %define NULL                        0
-  %define tam_int                     8  
+  %define NULL                         0
+  %define tam_int                      8
+  %define tam_pointer                  8  
 
  
 section .text
@@ -64,11 +65,64 @@ ct_new:
   pop rbp
   ret
 
+; ; =====================================
+; void borrarNodos(ctNode* pct);
+borrarNodos:
+  push rbp
+  mov rbp, rsp
+  push rbx
+  push r15
+
+  mov rbx, rdi ;guardo puntero al currNode
+  xor r15, r15 ;indice hijos
+      
+    .cicloLlamadas:
+    cmp r15, 4                         ;si ya veo que no quedan hijos por chequear, borro el nodo
+    je .borrarActual
+    mov rdi, rbx
+    add rdi, NODE_OFFSET_CHILD_0       ;muevo rdi al inicio del arreglo de hijos
+    lea rdi, [rdi + r15 * tam_pointer] ;[rdi] = puntero al hijo "r15"
+    cmp qword [rdi], NULL         
+    jne .borrarHijo                    ;si el hijo tiene algo, lo borro
+    inc r15
+    jmp .cicloLlamadas
+
+    .borrarHijo:
+      mov rdi, [rdi]
+      call borrarNodos  ;rdi = puntero al hijo a borrar
+      mov rdi, rbx      ;rdi = puntero al padre
+      inc r15           ;un hijo menos por revisar
+      jmp .cicloLlamadas
+
+    .borrarActual:
+      mov rdi, rbx
+      call free  
+      
+  pop r15
+  pop rbx
+  pop rbp
+  ret
+
+; ; =====================================
 
 ; =====================================
 ; void ct_delete(ctTree** pct);
 ct_delete:
-        ret
+  push rbp
+  mov rbp, rsp
+  push r12
+  sub rsp, 8
+
+    mov r12, [rdi] ;me guardo el puntero a la estructura
+    mov rdi, [r12 + TREE_OFFSET_ROOT]
+    call borrarNodos
+    mov rdi, r12
+    call free
+
+  add rsp, 8
+  pop r12
+  pop rbp
+  ret
 
 ; ; =====================================
 ; ; void ct_aux_print(ctNode* node);
