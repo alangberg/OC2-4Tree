@@ -21,7 +21,7 @@ ctNode* chequearCaso(ctNode* currNode, int indice, uint32_t newVal){
 ctNode* ct_aux_search(ctNode* currNode, uint32_t newVal){
 	if(currNode->len == 1 && currNode->value[0] == newVal) return NULL;
 	if(currNode->len == 2 && (currNode->value[0] == newVal || currNode->value[1] == newVal)) return NULL;
-	if(currNode->len == 2 && (currNode->value[0] == newVal || currNode->value[1] == newVal || currNode->value[2] == newVal)) return NULL;
+	if(currNode->len == 3 && (currNode->value[0] == newVal || currNode->value[1] == newVal || currNode->value[2] == newVal)) return NULL;
 	if(currNode->len != 3){
 		return currNode;
 	}else{
