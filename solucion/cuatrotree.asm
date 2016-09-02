@@ -17,8 +17,8 @@
 ; /** defines offsets y size **/
   ;-----ctTree-----
   %define TREE_OFFSET_ROOT             0
-  %define TREE_OFFSET_SIZE             8
-  %define TREE_SIZE                    12
+  %define TREE_OFFSET_CANT             8
+  %define TREE_OFFSET_SIZE             12
 
   ;-----NODE-----
   %define NODE_OFFSET_FATHER           0 
@@ -45,7 +45,9 @@
 
 
 section .data
-  formato db "%d,", 0x00
+formato : db "%d",10,0
+formatovacio : db "%s",10,0
+msj : db "El arbol esta vacio",10,0
 
 
 section .text
@@ -59,10 +61,10 @@ ct_new:
   sub rsp, 8
 
     mov r12, rdi
-    mov rdi, TREE_SIZE                        ;seteo el parametro que va a entrar en malloc()
+    mov rdi, TREE_OFFSET_SIZE                        ;seteo el parametro que va a entrar en malloc()
     call malloc                               ;pido memoria para tdt (empieza en rax)
     mov qword [rax+TREE_OFFSET_ROOT], NULL    ;seteo la raiz del nuevo arbol.
-    mov dword [rax+TREE_OFFSET_SIZE], 0       ;seteo la cantidad de nodos en 0 (este campo es una dword -> 4 bytes)
+    mov dword [rax+TREE_OFFSET_CANT], 0       ;seteo la cantidad de nodos en 0 (este campo es una dword -> 4 bytes)
     mov [r12], rax
 
   add rsp, 8
@@ -88,7 +90,7 @@ borrarNodos:
     call borrarNodos
     mov rdi, [rbx + NODE_OFFSET_CHILD_2]
     call borrarNodos
-    mov rdi, [rbx + NODE_OFFSET_CHILD_2]
+    mov rdi, [rbx + NODE_OFFSET_CHILD_3]
     call borrarNodos
 
   .borrarActual: ;ya borre los subarboles, ahora borro el nodo pct
@@ -113,10 +115,14 @@ ct_delete:
 
     mov rbx, [rdi] ;me guardo el puntero a la estructura
     mov rdi, [rbx + TREE_OFFSET_ROOT]
+    cmp rdi, NULL  ;si ya la raiz es null, no hago nada
+    je .fin
+
     call borrarNodos
+
+  .fin:
     mov rdi, rbx
     call free
-
   add rsp, 8
   pop rbx
   pop rbp
@@ -191,9 +197,16 @@ ct_print:
     mov r12, rsi
 
     cmp qword [rbx + TREE_OFFSET_ROOT], NULL
-    je .fin
+    je .esVacio
     mov rdi, [rbx + TREE_OFFSET_ROOT]
     call ct_aux_print
+    jmp .fin
+
+  .esVacio:
+    mov rdi, r12
+    mov rsi, formatovacio
+    mov rdx, msj
+    call fprintf
 
   .fin:
   pop r12
@@ -225,8 +238,7 @@ ctIter_new:
 ; =====================================
 ; void ctIter_delete(ctIter* ctIt);
 ctIter_delete:
-  call free
-  ret
+  jmp free
 
 ; =====================================
 ; void ctIter_first(ctIter* ctIt);
@@ -234,21 +246,21 @@ ctIter_first:
   push rbp
   mov rbp, rsp
 
-    mov rax, [rdi+ ITER_OFFSET_TREE]
-    mov rax, [rax + TREE_OFFSET_ROOT]
+    mov rsi, [rdi+ ITER_OFFSET_TREE]
+    mov rsi, [rsi + TREE_OFFSET_ROOT]
     
-    cmp rax, NULL
+    cmp rsi, NULL
     je .fin
 
   .ciclo:
-    cmp qword [rax + NODE_OFFSET_CHILD_0], NULL
+    cmp qword [rsi + NODE_OFFSET_CHILD_0], NULL
     je .fin
-    mov rax, [rax + NODE_OFFSET_CHILD_0]
+    mov rsi, [rsi + NODE_OFFSET_CHILD_0]
     jmp .ciclo
 
   .fin:
-    mov [rdi + ITER_OFFSET_NODE], rax
-    mov byte [rax + ITER_OFFSET_CURR], 0
+    mov [rdi + ITER_OFFSET_NODE], rsi
+    mov byte [rdi + ITER_OFFSET_CURR], 0
     mov dword [rdi + ITER_OFFSET_COUNT], 1
   
   pop rbp

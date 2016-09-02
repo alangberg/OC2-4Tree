@@ -1,0 +1,4 @@
+>>> Test : operaciones caso borde 1
+100 - 1
+100
+100 - 1
