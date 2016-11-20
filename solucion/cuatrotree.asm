@@ -266,79 +266,171 @@ ctIter_first:
   pop rbp
   ret
 
-; =====================================
-; void ctIter_aux_up(ctIter* ctIt);
+;void call ctIter_aux_up(ctIter* ctIt)
 ctIter_aux_up:
-  push rbp
-  mov rbp, rsp
-  push rbx
-  sub rsp, 8
-    mov rbx, rdi
-    
-    
-    
-    
-  add rsp, 8
-  pop rbx
-  pop rbp
-  ret
-; =====================================
+          push rbp
+          mov rbp,rsp
+          push rbx
+          push r12
+          push r13
+          sub rsp,8
+          
+          mov rbx,rdi                       ;guardo la dir de rdi en rbx para no perderla
+          mov r12,[rbx+ITER_OFFSET_NODE]    ;copio a rbx la direccion del nodo al que apunta el iterador
+          mov r13,[r12+NODE_OFFSET_FATHER]  ;copio a r12 la direccion del padre del nodo al que apunta el iterador
+          mov rdi,r12                       ;copio rdi la dir el nodo al que apunta el iterador
+          mov rsi,r13                       ;copio a rsi la dir del padre del nodo al que apunta el iterador
+          call ctIter_aux_isIn   
 
-; =====================================
-; void ctIter_aux_down(ctIter* ctIt);
+          cmp rax,0
+          je .Voyacurrent0 ;si rax devolvio 0 es porque el nodo actual es el hijo0 del padre entonces el siguiente elemento del iterador debe apuntar al value[0] del padre
+          cmp rax,1
+          je .Voyacurrent1
+          cmp rax,2
+          je .Voyacurrent2
+          cmp rax,3             ;si rax devolvio 3 es porque el nodo actual es el hijo3 del padre y ya recorrio todos los nodos
+          je .recursionarriba   ;tengo que subir hasta arriba de todo con llamadas recursivas
+
+          .Voyacurrent0:
+          mov rdi,rbx
+          mov [rdi+ITER_OFFSET_NODE],r13
+          mov byte [rdi+ITER_OFFSET_CURR],0
+          jmp .fin
+
+          .Voyacurrent1:
+          mov rdi,rbx
+          mov [rdi+ITER_OFFSET_NODE],r13
+          mov byte [rdi+ITER_OFFSET_CURR],1
+          jmp .fin
+
+          .Voyacurrent2:
+          mov rdi,rbx
+          mov [rdi+ITER_OFFSET_NODE],r13
+          mov byte [rdi+ITER_OFFSET_CURR],2
+          jmp .fin
+
+          .recursionarriba:
+          mov rdi,rbx
+          mov [rdi+ITER_OFFSET_NODE],r13
+          cmp qword [rdi+ITER_OFFSET_NODE],NULL  ;tengo que fijarme si puedo subir
+          je .fin                                ;en el caso donde no subo es cuando el padre es null q es la raiz
+          call ctIter_aux_up
+
+          .fin:
+          add rsp,8
+          pop r13
+          pop r12
+          pop rbx
+          pop rbp
+          ret
+;ctIter_aux_down(crIter* ctIt)
 ctIter_aux_down:
-  push rbp
-  mov rbp, rsp
+          push rbp
+          mov rbp,rsp
+          push rbx
+          sub rsp,8
 
-  .ciclo:
-    cmp qword [rax + NODE_OFFSET_CHILD_0], NULL
-    je .fin
-    mov rax, [rax + NODE_OFFSET_CHILD_0]
-    jmp .ciclo
+          mov rbx,[rdi+ITER_OFFSET_NODE] ;copio a rbx la dir del nodo al que apunta el iterador
+            .ciclo:
+            cmp qword [rbx+NODE_OFFSET_CHILD_0],NULL  ;mientras la dir del hijo[0] no sea cero bajar
+            je .fin
+            mov rbx,[rbx+NODE_OFFSET_CHILD_0]         ;mientras haya hijo[0] , actualizar el puntero a nodo del iterador
+            mov [rdi+ITER_OFFSET_NODE],rbx
+            jmp .ciclo
 
-  .fin:
-  mov [rdi + ITER_OFFSET_NODE], rax
-  mov byte [rax + ITER_OFFSET_CURR], 0
+          .fin:
+          mov byte [rdi+ITER_OFFSET_CURR],0     ;como bajo a la hoja con el elemento mas chico el current se actualiza al indice 0
+          add rsp,8
+          pop rbx
+          pop rbp
+          ret
 
-  pop rbp
-  ret
 ; =====================================
+; unint 32_t ctIter_aux_isIn(ctNode* current, ctNode* father)
+ctIter_aux_isIn:
+  
+            cmp rsi,NULL
+            je .fin
+            
+            cmp [rsi+NODE_OFFSET_CHILD_0],rdi  ;si la direccion del hijo[0] del padre coincide con el nodo actual , entonces subir por el hijo[0] en padre
+            je .Esdelhijo0
 
+            cmp [rsi+NODE_OFFSET_CHILD_1],rdi
+            je .Esdelhijo1
 
-; =====================================
+            cmp [rsi+NODE_OFFSET_CHILD_2],rdi
+            je .Esdelhijo2
+
+            cmp [rsi+NODE_OFFSET_CHILD_3],rdi
+            je .Esdelhijo3
+
+            .Esdelhijo0:
+            mov rax,0
+            ret
+
+            .Esdelhijo1:
+            mov rax,1
+            ret
+
+            .Esdelhijo2:
+            mov rax,2
+            ret
+
+            .Esdelhijo3:
+            mov rax,3
+            .fin:
+            ret
+
 ; void ctIter_next(ctIter* ctIt);
+;rdi<-- puntero al iterador
 ctIter_next:
-  push rbp
-  mov rbp, rsp
-  push rbx
-  sub rsp, 8
+        push rbp
+        mov rbp,rsp
+        push rbx
+        push r12
+        push r13
+        push r14
+        push r15
 
-    mov rbx, rdi
-    inc dword [rbx + ITER_OFFSET_COUNT]
-    inc byte [rbx + ITER_OFFSET_CURR]
+        xor rbx,rbx
+        xor r12,r12
+        xor r14,r14
+        xor r15,r15
+        
+        mov rbx,rdi                                   ;guardo la dir del iterador para no perderlo
+        mov r12b,[rbx+ITER_OFFSET_CURR]             ;guardo en r12 el valor de current
+        mov r13,[rbx+ITER_OFFSET_NODE]                ;guardo en r13 la dir del nodo al que apunta
+        add byte [rbx+ITER_OFFSET_CURR],1          ;actualizo el current del iterador
+        inc r12b                                       ;incremento 1 el current
+        add dword [rbx+ITER_OFFSET_COUNT],1           ;incremento 1 el contador porque el iterador se movio
+        mov ax,r12w
+        imul ax,8
+        mov r15w,ax                                   ;Para moverme entre el arreglo de childs tengo que moverme en current*8(tam de un puntero)
+        cmp qword [r13+NODE_OFFSET_CHILD_0+r15],NULL    ;if(ctIt->node->child[ctIt->current] == 0)
+        jne .haymashijos
+        mov r14b,[r13+NODE_OFFSET_LEN]
+        dec r14b
+        
+        cmp r12b,r14b            ;if(ctIt->current > ctIt->node->len -1)
+        jle .fin
+        mov rdi,rbx
+        call ctIter_aux_up
+        jmp .fin
 
-    mov rax, [rbx + ITER_OFFSET_NODE]
-    lea rax, [rax + NODE_OFFSET_CHILD_0]
-    cmp qword [rax + ITER_OFFSET_CURR * tam_pointer], NULL
-    jne .hayHijos
-      mov r8, [rbx + ITER_OFFSET_NODE]
-      mov r8, [r8 + NODE_OFFSET_LEN]
-      dec r8
-      cmp [rbx + ITER_OFFSET_CURR], r8
-      jle .fin 
-      call ctIter_aux_up
-      jmp .fin
+        .haymashijos:
+        mov r13,[r13+NODE_OFFSET_CHILD_0+r15]      ; ctIt->node = ctIt->node->child[ctIt->current]
+        mov rdi,rbx                               ;muevo a rdi la direccion del puntero al iterador pasado como parametro
+        mov [rdi+ITER_OFFSET_NODE],r13            ;actualizo el puntero a nodo del iterador
+        call ctIter_aux_down
+        .fin:
+        pop r15
+        pop r14
+        pop r13
+        pop r12
+        pop rbx
+        pop rbp
+        ret
 
-  .hayHijos:
-    mov rax, [rax + ITER_OFFSET_CURR * tam_pointer]   
-    mov [rbx + ITER_OFFSET_NODE], rax
-    call ctIter_aux_down
-
-  .fin:
-   
-  add rsp, 8
-  pop rbp
-  ret
 ; =====================================
 ; uint32_t ctIter_get(ctIter* ctIt);
 ctIter_get:
